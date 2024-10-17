@@ -1,0 +1,57 @@
+package com.example.demo.config;
+
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.Environment;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+
+import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Map;
+
+@Configuration
+public class DatabaseConfig {
+
+    @Value("${spring.datasource.url}")
+    private String dbUrl;
+
+    @Value("${spring.datasource.username}")
+    private String dbUsername;
+
+    @Value("${spring.datasource.password}")
+    private String dbPassword;
+
+    @Bean
+    public DataSource firebirdDataSource() {
+        HikariConfig config = new HikariConfig();
+        config.setDriverClassName("org.firebirdsql.jdbc.FBDriver");
+        config.setJdbcUrl(dbUrl);
+        config.setUsername(dbUsername);
+        config.setPassword(dbPassword);
+        config.setMaximumPoolSize(5);
+        return new HikariDataSource(config);
+    }
+
+    @Bean
+    public LocalContainerEntityManagerFactoryBean firebirdEntityManagerFactory(DataSource firebirdDataSource) {
+        LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
+        em.setDataSource(firebirdDataSource);
+        em.setPackagesToScan("com.example.demo.model"); // Specify where to scan for entities
+
+        HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+        em.setJpaVendorAdapter(vendorAdapter);
+
+        Map<String, Object> properties = new HashMap<>();
+        properties.put(AvailableSettings.DIALECT, "org.hibernate.dialect.FirebirdDialect");
+        properties.put(AvailableSettings.SHOW_SQL, true);
+        properties.put(AvailableSettings.HBM2DDL_AUTO, "update");
+
+        em.setJpaPropertyMap(properties);
+        return em;
+    }
+}
